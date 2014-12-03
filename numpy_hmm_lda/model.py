@@ -106,11 +106,16 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
         iterations = number of full samplings of the corpus
         '''
         for i in range(iterations):
-            for doument_idx in range(len(self.documents)):
+            for document_idx in range(len(self.documents)):
                 for sentence_idx in range(len(self.documents[document_idx])):
                     previous = None
                     for word_idx in range(self.documents[document_idx][sentence_idx].size):
+                        logging.info('[%d][%d][%d] = %d', document_idx, sentence_idx, word_idx, self.documents[document_idx][sentence_idx][word_idx])
+                        logging.info('topic = %d', self.topic_assignments[document_idx][sentence_idx][word_idx])
+                        logging.info('About to draw topic')
                         self.draw_topic(document_idx, sentence_idx, word_idx)
+                        logging.info('class = %d', self.class_assignments[document_idx][sentence_idx][word_idx])
+                        logging.info('About to draw class')
                         self.draw_class(document_idx, sentence_idx, word_idx)
 
     def draw_topic(self, document_idx, sentence_idx, word_idx):
@@ -158,7 +163,8 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
 
         # Draw topic
 
-        new_topic = np.random.multinomial(1, np.divide(proportions, np.sum(proportions)))[0]
+        new_topic = np.random.multinomial(1, proportions / np.sum(proportions))[0]
+        logging.info("Drew topic = %d", new_topic)
         self.topic_assignments[document_idx][sentence_idx][word_idx] = new_topic
 
         # Correct counts
@@ -177,41 +183,75 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
         old_class = self.class_assignments[document_idx][sentence_idx][word_idx]
         word = self.documents[document_idx][sentence_idx][word_idx]
 
-        # Get neighbors
+        # Get neighboring classes
 
         if word_idx > 0:
-            previous = self.documents[document_idx][sentence_idx][word_idx - 1]
+            previous = self.class_assignments[document_idx][sentence_idx][word_idx - 1]
         else:
             previous = None
 
         try:
-            future = self.documents[document_idx][sentence_idx][word_idx + 1]
+            future = self.class_assignments[document_idx][sentence_idx][word_idx + 1]
         except IndexError:
             future = None
 
-        # Build numerator
-        
-        numerator = self.num_transitions[:, future].astype(np.float32)
-        if previous is not None and future is not None and previous == future:
-            numerator[previous] += 1
-        numerator += self.gamma
+        # Build first term of numerator
 
-        numerator *= self.num_transitions[previous, word] + self.gamma
+        if previous is not None:
+            term_1 = self.num_transitions[previous, :].astype(np.float32)
+        else:
+            term_1 = np.zeros(self.num_classes, dtype=np.float32)
+        term_1 += self.gamma
+
+        # Build second term of numerator
+        
+        if future is not None:
+            term_2 = self.num_transitions[:, future].astype(np.float32)
+        else:
+            term_2 = np.zeros(self.num_classes, dtype=np.float32)
+        if previous is not None and future is not None and previous == future:
+            term_2[previous] += 1.0
+        term_2 += self.gamma
+
+        # Calculate numerator
+
+        numerator = term_1 * term_2
 
         # Build denominator
 
         denominator = self.num_words_assigned_to_class
         if previous is not None:
-            denominator[previous] += 1
+            denominator[previous] += 1.0
         denominator += self.num_classes * self.gamma
 
         # Calculate multiplier
 
         if self.class_assignments[document_idx][sentence_idx][word_idx] == 0:
-            multiplier = self.num_same_words_assigned_to_topic[word].astype(np.float32) + self.beta
-            multiplier /= self.num_words_assigned_to_topic + self.vocab_size * self.beta
+
+            # Initialize numerator of multiplier with same word topic counts
+
+            multiplier = self.num_same_words_assigned_to_topic[word].astype(np.float32)
+
+            # Smoothing
+
+            multiplier += self.beta
+
+            # Divide by denominator of multiplier
+
+            multiplier /= self.num_words_assigned_to_topic.astype(np.float32) + self.vocab_size * self.beta
+
         else:
-            multiplier = self.num_same_words_assigned_to_class[word].astype(np.float32) + self.delta
+
+            # Initialize numerator of multiplier with same word class counts
+
+            multiplier = self.num_same_words_assigned_to_class[word].astype(np.float32)
+
+            # Smoothing
+
+            multiplier += self.delta
+
+            # Divide by denominator of multiplier
+
             multiplier /= self.num_words_assigned_to_class + self.vocab_size * self.delta
 
         # Calculate probability proportions
@@ -220,7 +260,8 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
 
         # Draw class
 
-        new_class = np.random.multinomial(1, np.divide(proportions, np.sum(proportions)))[0]
+        new_class = np.random.multinomial(1, proportions / np.sum(proportions))[0]
+        logging.info("Drew class = %d", new_class)
         self.class_assignments[document_idx][sentence_idx][word_idx] = new_class
 
         # Correct counts

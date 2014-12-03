@@ -1,3 +1,4 @@
+import logging
 import unittest
 import numpy as np
 
@@ -12,15 +13,16 @@ class TestModel(unittest.TestCase):
 		2 - semantic word A
 		3 - semantic word B
 		'''
+		logging.basicConfig(level=logging.INFO)
 		document_a = [np.array([0, 2]), np.array([1, 2])]
 		document_b = [np.array([1, 3]), np.array([0, 3])]
 		model = HiddenMarkovModelLatentDirichletAllocation(vocab_size=4,
 														   num_topics=2,
 														   num_classes=2,
-														   alpha=0.0,
-														   beta=0.0,
-														   gamma=0.0,
-														   delta=0.0)
+														   alpha=1.0,
+														   beta=1.0,
+														   gamma=1.0,
+														   delta=1.0)
 		model.add_document(document_a)
 		model.add_document(document_b)
 		model.initialize()
