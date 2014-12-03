@@ -26,5 +26,9 @@ class TestModel(unittest.TestCase):
 		model.add_document(document_a)
 		model.add_document(document_b)
 		model.initialize()
-		model.train(1)
+		for idx, topic_distribution in enumerate(model.per_document_topic_distributions()):
+			logging.info('%d: %s', idx, topic_distribution)
+		model.train(100)
+		for idx, topic_distribution in enumerate(model.per_document_topic_distributions()):
+			logging.info('%d: %s', idx, topic_distribution)
 

@@ -134,6 +134,8 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
 
         proportions += self.alpha
 
+        logging.info('proportions = %s', proportions)
+
         # If the current word is assigned to the semantic class
 
         if self.class_assignments[document_idx][sentence_idx][word_idx] == 0:
@@ -158,13 +160,18 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
 
             # Apply multiplier
 
+            logging.info('numerator = %s', numerator)
+            logging.info('denominator = %s', denominator)
+
             proportions *= numerator
             proportions /= denominator
 
         # Draw topic
 
+        logging.info('proportions = %s', proportions)
+
         new_topic = np.random.multinomial(1, proportions / np.sum(proportions))[0]
-        logging.info("Drew topic = %d", new_topic)
+        logging.info('Drew topic = %d', new_topic)
         self.topic_assignments[document_idx][sentence_idx][word_idx] = new_topic
 
         # Correct counts
@@ -266,14 +273,19 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
 
         # Correct counts
 
-        self.num_transitions[previous, old_class] -= 1
-        self.num_transitions[previous, new_class] += 1
+        if previous is not None:
+            self.num_transitions[previous, old_class] -= 1
+            self.num_transitions[previous, new_class] += 1
 
-        self.num_transitions[old_class, future] -= 1
-        self.num_transitions[new_class, future] += 1
+        if future is not None:
+            self.num_transitions[old_class, future] -= 1
+            self.num_transitions[new_class, future] += 1
 
         self.num_same_words_assigned_to_class[word][old_class] -= 1
         self.num_same_words_assigned_to_class[word][new_class] += 1
 
         self.num_words_assigned_to_class[old_class] -= 1
         self.num_words_assigned_to_class[new_class] += 1
+
+    def per_document_topic_distributions(self):
+        return [document_topic_counts.astype(np.float32) / np.sum(document_topic_counts) for document_topic_counts in self.num_words_in_doc_assigned_to_topic]
