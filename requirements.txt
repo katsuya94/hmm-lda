@@ -1,5 +1,1 @@
-gnureadline==6.3.3
-ipdb==0.8
-ipython==2.3.1
 numpy==1.9.1
-wsgiref==0.1.2

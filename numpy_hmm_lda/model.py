@@ -41,7 +41,8 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
 
     def add_document_with_initial_configuration(self, document, topic_assignments, class_assignments):
         '''
-        Adds a document to the model along with the .
+        Adds a document to the model along with a configuration.
+        No need to initialize when doing this only to run_counts.
         document = numpy array of integers representing words
         topic_assignments = numpy array of integers representing topics
         class_assignments = numpy array of integers representing classes
@@ -60,6 +61,9 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
         self.run_counts()
 
     def run_counts(self):
+        '''
+        Run all counting routines based on current configuration.
+        '''
         self.num_words_in_doc_assigned_to_topic = [self.count_num_words_in_doc_assigned_to_topic(document_idx) for document_idx in xrange(len(self.documents))]
         self.num_same_words_assigned_to_topic = [self.count_num_same_words_assigned_to_topic(word) for word in xrange(self.vocab_size)]
         self.num_words_assigned_to_topic = self.count_num_words_assigned_to_topic()
@@ -68,6 +72,10 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
         self.num_transitions = self.count_num_transitions()
 
     def initialize_progressive(self):
+        '''
+        Start with empty counts.
+        Use the counts to progressively draw the next word.
+        '''
         self.topic_assignments = [np.empty(document.size) for document in self.documents]
         self.class_assignments = [np.empty(document.size) for document in self.documents]
         self.num_words_in_doc_assigned_to_topic = [np.zeros(self.num_topics) for document in self.documents]
@@ -84,6 +92,9 @@ class HiddenMarkovModelLatentDirichletAllocation(object):
                 self.draw_topic_uncounted(document_idx, word_idx)
 
     def check(self):
+        '''
+        Print inconsistencies in the current counts.
+        '''
         for test, check in zip(self.num_words_in_doc_assigned_to_topic, [self.count_num_words_in_doc_assigned_to_topic(document_idx) for document_idx in xrange(len(self.documents))]):
             try:
                 assert (test == check).all()

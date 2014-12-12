@@ -6,10 +6,10 @@ from numpy_hmm_lda.model import HiddenMarkovModelLatentDirichletAllocation, cate
 
 class TestModel(unittest.TestCase):
 
-    def setUp(self):
-        print
-
     def test_categorical(self):
+        '''
+        Ensure that the categorical distribution results are close to the mean.
+        '''
         counts = np.zeros(2, dtype=np.int64)
         for i in range(16):
             for j in range(1000):
@@ -18,6 +18,9 @@ class TestModel(unittest.TestCase):
         assert ratio > 1.75 and ratio < 2.25
 
     def test_initialize_progressive(self):
+        '''
+        Make sure that initialize_progressive results in a consistent configuration.
+        '''
         num_topics = 4
         num_classes = 4
         num_documents = 16
