@@ -6,7 +6,7 @@ This is a Python implementation of HMM-LDA as presented in T.L. Griffiths et al.
 
 Provide a readable, annotated codebase for future work on HMM-LDA and variations.
 
-Test the relative effectiveness of different initaliza
+Test the relative effectiveness of different initalization methods.
 
 # Installation
 
